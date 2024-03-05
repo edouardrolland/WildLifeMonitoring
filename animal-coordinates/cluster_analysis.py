@@ -4,6 +4,36 @@ import json
 import math
 import random
 
+
+class Drone:
+
+    def __init__(self, altitude, fov, position):
+
+        #Non tunable parameters
+        MAX_ALTITUDE = 150
+        #Tunable parameters
+        self.max_altitude = MAX_ALTITUDE        
+        self.altitude = altitude
+        self.fov = fov
+        self.x, self.y = position
+        self.radius = self.altitude * math.tan(math.radians(self.fov / 2))
+        
+    def plot(self):
+        plt.scatter(self.x, self.y, marker='x', s=20)
+        circle = plt.Circle((self.x, self.y), self.radius, color='r', fill=False)
+        plt.gca().add_patch(circle)
+        
+    def find_visible_animals(self, animal_positions):
+        
+        drone_position = np.array([[self.x], [self.y]])
+        animal_positions = np.array(animal_positions)
+        distances = np.linalg.norm(animal_positions - drone_position, axis=0)
+        visible_animals_mask = distances < self.radius
+        visible_animals = animal_positions[:, visible_animals_mask]
+        
+        return visible_animals.tolist()
+        
+
 class AnimalPosition:
     
     def __init__(self):
@@ -26,13 +56,23 @@ class AnimalPosition:
         y = np.random.randint(buffer, 1000 - buffer, N)
         return x, y
 
-    def plot_points(self, x, y):
+    def plot_points(self):
         # Plot the spatial distribution of points
-        plt.scatter(x, y)
+        plt.scatter(self.all_x_coords, self.all_y_coords, s=5)
         plt.xlabel('X Coordinate')
         plt.ylabel('Y Coordinate')
-        plt.title('Spatial Distribution of Points')
+        plt.title('Spatial Distribution of Animal Positions')
+        plt.xlim(0, 1000)  # Set the X axis range from 0 to 1000
+        plt.ylim(0, 1000)  # Set the Y axis range from 0 to 1000
+        plt.gca().set_aspect('equal', adjustable='box')  # Impose the same scale on X and Y axis
+        plt.grid()
         plt.show()
+        
+    def  OlPejeta_Animal_Density(self):
+        # Stick to the Ol Pejeta Animal Density
+        Number_of_Animals_OP = 10968
+        Area_OP = 360
+        print(f"The Animal Density in OP is", {Number_of_Animals_OP / Area_OP})
 
     def attribute_points(self, x_centroids, y_centroids):
         # Chemin vers le fichier JSON contenant les données des annotations
@@ -47,13 +87,6 @@ class AnimalPosition:
         selected_images = random.sample(data['images'], N)
         centroid_number = 0
         animal_number = 0
-        
-        # Stick to the Ol Pejeta Animal Density
-        Number_of_Animals_OP = 10968
-        Area_OP = 360 # 360 km^2
-        Density_OP = Number_of_Animals_OP / Area_OP
-        
-        print(f"The Animal Density in OP is", {Density_OP})
         
         for image_data in selected_images:
             image_id = image_data['id']
@@ -90,20 +123,11 @@ class AnimalPosition:
                 
             self.all_x_coords.extend(x_coords)
             self.all_y_coords.extend(y_coords)
-            
-            plt.scatter(x_coords, y_coords, s=5)
+    
             animal_number += len(x_coords)
             centroid_number += 1
-        
-        print("Total number of animals:", animal_number)    
-        
-        plt.xlim(0, 1000)  # Set the X axis range from 0 to 1000
-        plt.ylim(0, 1000)  # Set the Y axis range from 0 to 1000
-        plt.gca().set_aspect('equal', adjustable='box')  # Impose the same scale on X and Y axis
-        plt.grid()
-        plt.show()
                 
-    def main(self):
+    def generate_herd(self):
         N = 10
         x_centroids, y_centroids = self.generate_points(N)
         self.attribute_points(x_centroids, y_centroids)
@@ -113,6 +137,16 @@ class AnimalPosition:
 
 if __name__ == "__main__":
     
+    FOV = 84
+    ALTITUDE = 80
+    
+    drone = Drone(ALTITUDE, FOV, (500, 500) )
     animal_attr_points = AnimalPosition()
-    animal_attr_points.main()
-    all_x_coords, all_y_coords = animal_attr_points.get_all_points()
+    animal_attr_points.generate_herd()
+    
+    print(drone.find_visible_animals(animal_attr_points.get_all_points()))
+    print(len(drone.find_visible_animals(animal_attr_points.get_all_points())[0]))
+    
+    # Plot the animal positions and the drone
+    drone.plot()
+    animal_attr_points.plot_points()    
