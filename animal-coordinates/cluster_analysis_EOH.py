@@ -3,9 +3,8 @@ import json
 import math
 import random
 from sklearn.cluster import DBSCAN
-from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
-
+from pyMetaheuristic.algorithm import elephant_herding_optimization
 
 class Drone:
     def __init__(self, altitude, fov, position):
@@ -144,10 +143,17 @@ class AnimalPosition:
     
     
     
-def function_to_optimize(drones, animal_attr_points):
+#variable_values = (x0,y0,x1,y1,x2,y2,x3,y3,x4,y4,.........,xn,yn)
+
+animal_attr_points = AnimalPosition()
+animal_position = animal_attr_points.get_all_points()
+
+def function_to_optimize(variables_values):
     
     monitored_animals = []
-    animal_position = animal_attr_points.get_all_points()
+    drones = []
+    for k in range(0, len(variables_values)-1):
+        drones.append(Drone(ALTITUDE, FOV, (variables_values[k], variables_values[k+1])))    
     
     for drone in drones:
         visible_animals = drone.find_visible_animals(animal_position)
@@ -155,9 +161,15 @@ def function_to_optimize(drones, animal_attr_points):
             
     unique_monitored_animals = np.unique(monitored_animals, axis=0)
     num_monitored_animals = len(unique_monitored_animals)
-    percentage = (num_monitored_animals / len(points)) * 100
     
-    return percentage
+    percentage = (num_monitored_animals / len(variables_values)) * 100
+    
+    print("The percentage is: ", percentage)
+    
+    if percentage < 1:
+        return 1000
+    
+    return 1/percentage
 
 if __name__ == "__main__":
 
@@ -165,71 +177,30 @@ if __name__ == "__main__":
     ALTITUDE = 100
     N = 3
     
-    position = (500, 500)
-    drones = [Drone(ALTITUDE, FOV, position) for _ in range(N)]
+    min_values = [0 for _ in range(2*N)]
+    max_values = [1000 for _ in range(2*N)]
+ 
+    # EHO - Parameters
+    parameters = {
+    'size': 50,
+    'min_values': min_values,
+    'max_values': max_values,
+    'generations': 1000,
+    'alpha': 0.5,
+    'beta': 0.1,
+        'verbose': True,
+        'start_init': None,
+        'target_value': None
+    }
+    
     animal_attr_points = AnimalPosition()
     animal_attr_points.generate_herd()
-
-    # Get all points
-    x_coords, y_coords = animal_attr_points.get_all_points()
-    points = np.array(list(zip(x_coords, y_coords)))
-
-    # Apply density clustering
-    epsilon = 25  # Distance threshold for clustering
-    min_samples = 4  # Minimum number of points to form a cluster
-    dbscan = DBSCAN(eps=epsilon, min_samples=min_samples)
-
-    labels = dbscan.fit_predict(points)
-    plt.scatter(points[:, 0], points[:, 1], c=labels, cmap='viridis', s=5)
-    centroids = []
     
-    for i in range(np.max(labels) + 1):
-        cluster_points = points[labels == i]
-        centroid = np.mean(cluster_points, axis=0)
-        centroids.append(centroid)
-        plt.scatter(centroid[0], centroid[1], marker='x', s=5, c='r')
-        """
-        # Calculate convex hull
-        hull = ConvexHull(cluster_points)
-        X, Y = cluster_points[hull.vertices, 0], cluster_points[hull.vertices, 1]
-        X = np.concatenate((X, [X[0]]))
-        Y = np.concatenate((Y, [Y[0]]))
-        plt.plot(X, Y, 'b--', lw=2)
-        """
-    occurences = np.zeros((np.max(labels) + 1))
-    for label in labels:
-        if label != -1:
-            occurences[label] += 1
-            
-    # Find the N indices with the biggest occurrences
-    top_indices = np.argsort(occurences)[-N:][::-1]
-    for drone in drones:
-        drone.x, drone.y = centroids[top_indices[drones.index(drone)]]
-        drone.plot()
-        
-    # Calculate the number of animals monitored by the drones
-    monitored_animals = []
-    animal_position = animal_attr_points.get_all_points()
+    # EHO - Algorithm
+    eho = elephant_herding_optimization(target_function = function_to_optimize, **parameters)
     
-    for drone in drones:
-        visible_animals = drone.find_visible_animals(animal_position)
-        monitored_animals.extend(visible_animals[0])
+    # EHO - Solution
+    variables = eho[:-1]
+    minimum   = eho[ -1]
+    print('Variables: ', np.around(variables, 4) , ' Minimum Value Found: ', round(minimum, 4) )
     
-    print(monitored_animals)
-    
-    unique_monitored_animals = np.unique(monitored_animals, axis=0)
-    num_monitored_animals = len(unique_monitored_animals)
-    
-    percentage = (num_monitored_animals / len(points)) * 100
-    print(f"Percentage of animals monitored by drones: {percentage}%")
-    
-    # Commands for the general plot
-    plt.xlabel('X Coordinate')
-    plt.ylabel('Y Coordinate')
-    plt.title('Density Clustering of Animal Positions')
-    plt.xlim(0, 1000)  # Set the X axis range from 0 to 1000
-    plt.ylim(0, 1000)  # Set the Y axis range from 0 to 1000
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.grid()
-    plt.plot([0, 1000, 1000, 0, 0], [0, 0, 1000, 1000, 0], 'k-')
-    plt.show()
