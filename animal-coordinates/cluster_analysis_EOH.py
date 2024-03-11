@@ -158,7 +158,6 @@ def function_to_optimize(drones, animal_attr_points):
     percentage = (num_monitored_animals / len(points)) * 100
     
     return percentage
-    
 
 if __name__ == "__main__":
 

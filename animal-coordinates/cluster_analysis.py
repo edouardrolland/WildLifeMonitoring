@@ -135,7 +135,7 @@ class AnimalPosition:
             centroid_number += 1
 
     def generate_herd(self):
-        N = 50
+        N = 20
         x_centroids, y_centroids = self.generate_points(N)
         self.attribute_points(x_centroids, y_centroids)
 
