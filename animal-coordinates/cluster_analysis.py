@@ -78,7 +78,7 @@ class AnimalPosition:
 
     def attribute_points(self, x_centroids, y_centroids):
         # Chemin vers le fichier JSON contenant les données des annotations
-        json_file_path = '/home/edr/Desktop/Animal Herding Database/Goats-Geladas/kenyan-ungulates/ungulate-annotations/annotations-clean-name-pruned/annotations-clean-name-pruned.json'
+        json_file_path = 'annotations-clean-name-pruned.json'
         FOV = 84
         ALTITUDE = 30
         N = len(x_centroids)
@@ -135,7 +135,7 @@ class AnimalPosition:
             centroid_number += 1
 
     def generate_herd(self):
-        N = 20
+        N = 50
         x_centroids, y_centroids = self.generate_points(N)
         self.attribute_points(x_centroids, y_centroids)
 

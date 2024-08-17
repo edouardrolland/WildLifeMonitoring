@@ -202,5 +202,4 @@ if __name__ == "__main__":
     # EHO - Solution
     variables = eho[:-1]
     minimum   = eho[ -1]
-    print('Variables: ', np.around(variables, 4) , ' Minimum Value Found: ', round(minimum, 4) )
-    
+    print('Variables: ', np.around(variables, 4) , ' Minimum Value Found: ', round(minimum, 4))
